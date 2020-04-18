@@ -1,4 +1,6 @@
 # Adding a DASD to MVS 3.8J
+*written by roblthegreat*
+  
 Information on adding another DASD to MVS.  This will not cover performing an IOGEN.  We will use the existing IOGEN.  
 
 If an IOGEN is needed, see the IOGEN document [to be written].
@@ -49,8 +51,7 @@ From the Hercules console vary the new drive offline (device id 242 in this exam
 ```
 
 #### Format the volume
-Login to TSO and submit JCL to format the DASD:
-
+Login to TSO. Create a new JCL job using the following code as a template. The JCL code origniated from Jay Moseley's page on addind a DASD, referenced at the end of this document.
 
 ```jcl
 //HERC01  JOB (1),ICKDSF,CLASS=A,MSGCLASS=X
@@ -68,7 +69,7 @@ address  | Device Address [242]
 volser   | Volume Serial Number [MYVOL]
 extent   | number of tracks to reserve for VTOC [40, should be fine for 3350]
 
-Update the JCL to reflect the details of the DASD to format.  Also, update the MSGCLASS to H to hold the outpoot in the spool so that it can be reviewed.
+Update the JCL to reflect the details of the DASD to format. Also, update the MSGCLASS to H to hold the output in the spool so that it can be reviewed.
 ```jcl
 //HERC01  JOB (1),ICKDSF,CLASS=A,MSGCLASS=H
 //ICKDSF EXEC PGM=ICKDSF,REGION=4096K
@@ -79,6 +80,7 @@ Update the JCL to reflect the details of the DASD to format.  Also, update the M
 /*
 //
 ```
+Save and submit the job.
 
 Back in the console, MVS will ask "ICK003D REPLY U TO ALTER VOLUME 242 CONTENTS, ELSE T".  
 
@@ -86,7 +88,7 @@ To confirm that you want to format the drive, enter reply in the console"
 ```
 /r 00,U
 ```
-Check the job outpoot and confirm that the RC=0.
+Check the job output and confirm that the RC=0.
 
 #### Mount the volume.
 ```
@@ -95,7 +97,7 @@ Check the job outpoot and confirm that the RC=0.
 The volume should now be accessible at this point, but will we still need to make sure it is automatically mounted each time we IPL the mainfranme.
 
 #### Edit SYS1.PARMLIB(VATLST00)
-In RFE, edit PDS member SYS1.PARMLIB(VATLST00), adding a new record at the bottom of the list:
+In RFE, edit PDS member SYS1.PARMLIB(VATLST00), adding a new record at the bottom of the list, making certain you format the record the same as the existing records:
 
 The parameters specified for each volume are:
 Column(s) | Description
@@ -105,9 +107,13 @@ Column(s) | Description
 10        | The use attribute. 0 = STORAGE; 1 = PUBLIC; 2 = PRIVATE
 12 - 19   |Denotes the device type.
 20        | Just a comma ','
-21        | indicates whether the operator should be requested to mount the volume if it is not found during IPL.  In most cases you should specify N (for NO) in this column.
-23 - 71   | may be used for comments
+21        | indicates whether the operator should be requested to mount the volume if it is not found during IPL.  In most cases you should specify N (for NO) in this column. (This refers back to the time when disks were removable and an operator had to manually install the disk packs.  "Just say 'N'o.")
+23 - 71   | Used for comments
 
+Save your changes.
+
+#### TO DO
+Need to add information on catalogs for  completeness.
 
 # References
 * [Adding a disk device to your MVS or z/OS system - M14](https://www.youtube.com/watch?v=UXCaXF0n0F4) - video by Moshix.  Note that he inadvertently leaves off the '-a' paramater in for the dasdinit command initially which causes some errors, causing him to spend some time troubleshooting the issue.  
