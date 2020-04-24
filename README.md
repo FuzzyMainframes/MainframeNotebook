@@ -7,5 +7,8 @@ At the moment, there isn't much here, but will slowly be adding articles as time
 
 
 # Contents:
+
+* [TK4- Tips](TK4-Tips.md)
 * MVS
+  * [MVS Console Cheat Sheet](MVS/MVS-Console-Cheat-Sheet.md) 
   * [Adding a DASD to MVS](MVS/Adding-a-DASD-to-MVS.md)

@@ -1,9 +1,7 @@
 # Adding a DASD to MVS 3.8J <!-- omit in toc -->
-*written by roblthegreat*
+*written by [roblthegreat](https://github.com/roblthegreat)*
   
 Information on adding another DASD to MVS.  This will not cover performing an IOGEN.  We will use the existing IOGEN.  
-
-If an IOGEN is needed, see the IOGEN document [to be written].
 
 > **NOTE**  
 > The 3390-3 is the largest supported DASD, but it doesn’t support it very well. Even 3380s are not supported perfectly. 3350 is where MVS 3.8 wants to be ideally.
@@ -27,7 +25,7 @@ TK4- disk images are named "volumne_name.device_address".  For example, MVSRES o
 
 In the tk4-.cnf, DASDs are defined in the following format:
 ```
-device_id device_type dasd_image
+device_address device_type dasd_image
 ```
 
 For example, the MVSRES volume, on a model 3350 DASD, and located as an image file dasd/mvsres.148 would look like this in the conf/tk4-.cnf file.
@@ -42,7 +40,7 @@ dasdinit -bz2 -a dasd/myvol.242 3350 MYVOL
 Paramater | Definition
 ----------|-
 -bz2      | designates this to be a compressed volume
--a        | instructs dasdinit to create alternate tracks .Most MVS utilities and programs will not function properly without the presence of the alternate tracks.
+-a        | instructs dasdinit to create alternate tracks. Most MVS utilities and programs will not function properly without the presence of the alternate tracks.
 myvol.242 | filename of the DASD image on the Hercules host machine
 3350      | Model of the DASD 
 MYVOL     | Volume serial number as seen by MVS.
@@ -60,7 +58,7 @@ From the Hercules console vary the new drive offline (device id 242 in this exam
 ```
 
 ## Format the volume
-Login to TSO. Create a new JCL job using the following code as a template. The JCL code origniated from Jay Moseley's page on addind a DASD, referenced at the end of this document.
+Login to TSO. Create a new JCL job using the following code as a template. The JCL code origniated from Jay Moseley's page on adding a DASD, referenced at the end of this document.
 
 ```jcl
 //HERC01  JOB (1),ICKDSF,CLASS=A,MSGCLASS=X
@@ -80,7 +78,7 @@ extent   | number of tracks to reserve for VTOC [40, should be fine for 3350]
 
 Update the JCL to reflect the details of the DASD to format. Also, update the MSGCLASS to H to hold the output in the spool so that it can be reviewed.
 ```jcl
-//HERC01  JOB (1),ICKDSF,CLASS=A,MSGCLASS=H
+//HERC01A  JOB (1),ICKDSF,CLASS=A,MSGCLASS=H
 //ICKDSF EXEC PGM=ICKDSF,REGION=4096K
 //SYSPRINT DD  SYSOUT=*
 //SYSIN    DD  *
@@ -105,7 +103,7 @@ From the console, we now need to bring the newly formatted volume online and mou
 /v 242,online
 /m 242,vol=(sl,MYVOL),USE=private
 ```
-The volume should now be accessible at this point, but will we still need to make sure it is automatically mounted each time we IPL the mainfranme.
+The volume should now be accessible at this point, but will we still need to make sure it is automatically mounted each time we IPL the mainframe.
 
 ## Edit SYS1.PARMLIB(VATLST00)
 In RFE, edit PDS member SYS1.PARMLIB(VATLST00), adding a new record at the bottom of the list, making certain you format the record the same as the existing records:
@@ -115,10 +113,19 @@ Column(s) | Description
 ----------|-
 1 - 6     | the volume serial number 
 8         | 0 = permanently resident volumes; 1 = reserved volumes. Use 0 in most cases.
-10        | The use attribute. 0 = STORAGE; 1 = PUBLIC; 2 = PRIVATE
+10        | The use attribute. 0 = STORAGE; 1 = PUBLIC; 2 = PRIVATE [See 'Storage Use Classes' below]
 12 - 19   |Denotes the device type.
 21        | indicates whether the operator should be requested to mount the volume if it is not found during IPL.  In most cases you should specify N (for NO) in this column. (This refers back to the time when disks were removable and an operator had to manually install the disk packs.  "Just say 'N'o.")
 23 - 71   | Used for comments
+
+> ### Storage Use Classes
+> 
+> A DASD volume is always mounted with one of the following use attributes:
+> Class   | Use
+> --------|---
+> `PRIVATE`| New datasets will be created on this volume only if the user specifies the volume serial of this disk volume.
+> `PUBLIC`  | MVS may place a temporary dataset on this volume, if the user did not specify a volume serial for the temporary dataset.  Datasets may also be placed on the volume by specifying the volume serial, as with PRIVATE volumes.  A temporary dataset is one with a DSNAME beginning with an ampersand and/or with a disposition equivalent to NEW,DELETE.
+> `STORAGE` | MVS places permanent datasets on this volume if the user did not supply a volume serial for the datasets.  In addition, temporary datasets and datasets placed by volume serial may also be placed on the volume. 
 
 Save your changes.
 
@@ -129,3 +136,4 @@ Save your changes.
 ## References
 * [Adding a disk device to your MVS or z/OS system - M14](https://www.youtube.com/watch?v=UXCaXF0n0F4) - video by Moshix.  Note that he inadvertently leaves off the '-a' paramater in for the dasdinit command initially which causes some errors, causing him to spend some time troubleshooting the issue.  
 * [Adding DASD Volumes](http://www.jaymoseley.com/hercules/installMVS/addingDasd.htm) - Jay Moseley's article on adding a DASD.  Good reference, but was written for Hercules 3.11.
+
